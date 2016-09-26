@@ -65,27 +65,3 @@ class MainActivity: Activity() {
     }
 }
 
-class MainActivityUI : AnkoComponent<MainActivityUI> {
-    override fun createView(ui: AnkoContext<MainActivityUI>) = with(ui) {
-        verticalLayout {
-            toolbar {
-                background = context.attrAsColorDrawable(R.attr.colorPrimary)
-                elevation = dip(4).toFloat()
-                theme =
-            }.lparams(width = matchParent, height = context.attrAsDimen(R.attr.actionBarSize))
-        }
-    }
-
-}
-
-fun Context.attribute(value : Int) : TypedValue {
-    var ret = TypedValue()
-    theme.resolveAttribute(value, ret, true)
-    return ret
-}
-
-fun Context.attrAsDimen(value : Int) : Int{
-    return TypedValue.complexToDimensionPixelSize(attribute(value).data, getResources().getDisplayMetrics())
-}
-
-fun Context.attrAsColorDrawable(value: Int) = ColorDrawable(attribute(value).data)
