@@ -1,5 +1,6 @@
-package idv.mistasy.hackernewsreader
+package idv.mistasy.hackernewsreader.data
 
+import idv.mistasy.hackernewsreader.data.model.Item
 import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Path
