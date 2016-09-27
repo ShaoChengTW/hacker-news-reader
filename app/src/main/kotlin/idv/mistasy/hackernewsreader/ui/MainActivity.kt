@@ -1,38 +1,27 @@
 package idv.mistasy.hackernewsreader.ui
 
 import android.app.Activity
-import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import idv.mistasy.hackernewsreader.R
 import idv.mistasy.hackernewsreader.data.HackerNewsService
-import okhttp3.Interceptor
+import idv.mistasy.hackernewsreader.data.model.Item
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import org.jetbrains.anko.*
-import org.jetbrains.anko.appcompat.v7.toolbar
-import org.jetbrains.anko.recyclerview.v7.recyclerView
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
-import rx.Observable
-import rx.Subscriber
 import rx.android.schedulers.AndroidSchedulers
-import rx.functions.Action1
-import rx.functions.Func1
 import rx.schedulers.Schedulers
+import rx.subjects.PublishSubject
 
 class MainActivity: Activity() {
     private val TAG: String = "MainActivity"
@@ -63,22 +52,32 @@ class MainActivity: Activity() {
         setContentView(R.layout.activity_main)
 
         recyclerView = findViewById(R.id.recycler_view) as RecyclerView?
-        recyclerView?.setHasFixedSize(true)
         recyclerView?.layoutManager = LinearLayoutManager(this)
 
-        adapter = TopStoriesAdapter(emptyList<Long>())
+        adapter = TopStoriesAdapter(mutableListOf<Long>())
+        val subscription = adapter?.itemClicks?.asObservable()?.subscribe( {
+            Log.d(TAG, "url2: ${it.url}")
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.url)))
+        })
+        Log.d(TAG, "subscription: $subscription")
+
+        recyclerView?.adapter = adapter
 
         hackerNewsService.getTopStoriesRx()
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     Log.d(TAG, "count: ${it.count()}")
-                    recyclerView?.adapter = TopStoriesAdapter(it.subList(0, 10))
+                    adapter?.storyIds?.clear()
+                    adapter?.storyIds?.addAll(it.subList(0, 10))
+                    adapter?.notifyDataSetChanged()
                 }
 
     }
 
-    inner class TopStoriesAdapter(val storyIds: List<Long>): RecyclerView.Adapter<TopStoriesViewHolder>() {
+    inner class TopStoriesAdapter(val storyIds: MutableList<Long>): RecyclerView.Adapter<TopStoriesViewHolder>() {
+
+        val itemClicks: PublishSubject<Item> = PublishSubject.create()
 
         override fun getItemCount(): Int {
             return storyIds.count()
@@ -88,8 +87,12 @@ class MainActivity: Activity() {
             hackerNewsService.getItem(storyIds[position].toString())
                     .subscribeOn(Schedulers.newThread())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe {
-                        holder?.title?.text = it.title
+                    .subscribe { item ->
+                        holder?.title?.text = item.title
+                        holder?.itemView?.setOnClickListener {
+                            Log.d(TAG, "url: ${item.url}")
+                            itemClicks.onNext(item)
+                        }
                     }
         }
 
