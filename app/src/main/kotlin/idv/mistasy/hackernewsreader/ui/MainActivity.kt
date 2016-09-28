@@ -2,7 +2,6 @@ package idv.mistasy.hackernewsreader.ui
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -11,38 +10,24 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import idv.mistasy.hackernewsreader.HnrApp
 import idv.mistasy.hackernewsreader.R
+import idv.mistasy.hackernewsreader.data.DataManager
 import idv.mistasy.hackernewsreader.data.HackerNewsService
 import idv.mistasy.hackernewsreader.data.model.Item
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
-import retrofit2.converter.gson.GsonConverterFactory
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
+import javax.inject.Inject
 
 class MainActivity: Activity() {
     private val TAG: String = "MainActivity"
 
-    val hackerNewsService: HackerNewsService by lazy {
-        val interceptor = HttpLoggingInterceptor(HttpLoggingInterceptor.Logger { Log.d(TAG, it) })
-        interceptor.level = HttpLoggingInterceptor.Level.BASIC
+    @Inject
+    lateinit var dataManager: DataManager
 
-        val okHttpClient = OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .build()
-
-        val retrofit = Retrofit.Builder()
-                .baseUrl("https://hacker-news.firebaseio.com/v0/")
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(okHttpClient)
-                .build()
-
-        retrofit.create(HackerNewsService::class.java)
-    }
+    @Inject
+    lateinit var hackerNewsService: HackerNewsService
 
     private var adapter: TopStoriesAdapter? = null
     private var recyclerView: RecyclerView? = null
@@ -50,6 +35,9 @@ class MainActivity: Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        HnrApp.appComponent.inject(this)
+
         setContentView(R.layout.activity_main)
 
         recyclerView = findViewById(R.id.recycler_view) as RecyclerView?
@@ -66,7 +54,7 @@ class MainActivity: Activity() {
 
         recyclerView?.adapter = adapter
 
-        hackerNewsService.getTopStoriesRx()
+        dataManager.getTopStories()
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
