@@ -24,6 +24,8 @@ android {
 }
 
 dependencies {
+    compile fileTree(dir: 'libs', include: '*.jar')
+
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.anko:anko-sdk23:$anko_version"
     compile "org.jetbrains.anko:anko-common:$anko_version"

@@ -47,6 +47,7 @@ class MainActivity: Activity() {
     private var adapter: TopStoriesAdapter? = null
     private var recyclerView: RecyclerView? = null
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -57,7 +58,9 @@ class MainActivity: Activity() {
         adapter = TopStoriesAdapter(mutableListOf<Long>())
         val subscription = adapter?.itemClicks?.asObservable()?.subscribe( {
             Log.d(TAG, "url2: ${it.url}")
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.url)))
+            val intent = Intent(this, ItemActivity::class.java)
+            intent.putExtra(ItemActivity.INTENT_EXTRA_URL, it.url)
+            startActivity(intent)
         })
         Log.d(TAG, "subscription: $subscription")
 
