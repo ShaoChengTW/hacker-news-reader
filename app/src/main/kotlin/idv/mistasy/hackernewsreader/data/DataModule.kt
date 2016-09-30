@@ -1,8 +1,10 @@
 package idv.mistasy.hackernewsreader.data
 
+import android.content.Context
 import android.util.Log
 import dagger.Module
 import dagger.Provides
+import io.realm.RealmConfiguration
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -42,8 +44,16 @@ class DataModule {
 
     @Provides
     @Singleton
-    fun provideDataManager(hackerNewsService: HackerNewsService): DataManager {
-        return DataManager(hackerNewsService)
+    fun provideDataManager(hackerNewsService: HackerNewsService,
+                           realmConfig: RealmConfiguration): DataManager {
+        return DataManager(hackerNewsService, realmConfig)
     }
 
+    @Provides
+    @Singleton
+    fun provideRealmConfig(context: Context): RealmConfiguration {
+        return RealmConfiguration.Builder()
+            .schemaVersion(0)
+            .build()
+    }
 }

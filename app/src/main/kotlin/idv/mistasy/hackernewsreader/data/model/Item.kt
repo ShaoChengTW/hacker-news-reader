@@ -1,3 +1,16 @@
 package idv.mistasy.hackernewsreader.data.model
 
-data class Item(val id: Int, val title: String, val text: String, val url: String)
+import io.realm.RealmObject
+import io.realm.annotations.PrimaryKey
+
+open class Item: RealmObject() {
+
+    @PrimaryKey
+    open var id: Long? = 0
+
+    open var title: String? = null
+
+    open var text: String? = null
+
+    open var url: String? = null
+}

@@ -15,9 +15,12 @@ import idv.mistasy.hackernewsreader.R
 import idv.mistasy.hackernewsreader.data.DataManager
 import idv.mistasy.hackernewsreader.data.HackerNewsService
 import idv.mistasy.hackernewsreader.data.model.Item
+import io.realm.RealmList
+import io.realm.RealmResults
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
+import timber.log.Timber
 import javax.inject.Inject
 
 class MainActivity: Activity() {
@@ -43,48 +46,46 @@ class MainActivity: Activity() {
         recyclerView = findViewById(R.id.recycler_view) as RecyclerView?
         recyclerView?.layoutManager = LinearLayoutManager(this)
 
-        adapter = TopStoriesAdapter(mutableListOf<Long>())
+        adapter = TopStoriesAdapter(null)
         val subscription = adapter?.itemClicks?.asObservable()?.subscribe( {
             Log.d(TAG, "url2: ${it.url}")
             val intent = Intent(this, ItemActivity::class.java)
             intent.putExtra(ItemActivity.INTENT_EXTRA_URL, it.url)
             startActivity(intent)
         })
-        Log.d(TAG, "subscription: $subscription")
 
         recyclerView?.adapter = adapter
 
-        dataManager.getTopStories()
+        Timber.d("sync")
+        dataManager.sync()
+
+        dataManager.getItems()
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     Log.d(TAG, "count: ${it.count()}")
-                    adapter?.storyIds?.clear()
-                    adapter?.storyIds?.addAll(it.subList(0, 10))
+                    adapter?.stories = it
                     adapter?.notifyDataSetChanged()
                 }
 
     }
 
-    inner class TopStoriesAdapter(val storyIds: MutableList<Long>): RecyclerView.Adapter<TopStoriesViewHolder>() {
+    inner class TopStoriesAdapter(var stories: RealmResults<Item>?): RecyclerView.Adapter<TopStoriesViewHolder>() {
 
         val itemClicks: PublishSubject<Item> = PublishSubject.create()
 
         override fun getItemCount(): Int {
-            return storyIds.count()
+            return stories?.count() ?: 0
         }
 
         override fun onBindViewHolder(holder: TopStoriesViewHolder?, position: Int) {
-            hackerNewsService.getItem(storyIds[position].toString())
-                    .subscribeOn(Schedulers.newThread())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe { item ->
-                        holder?.title?.text = item.title
-                        holder?.itemView?.setOnClickListener {
-                            Log.d(TAG, "url: ${item.url}")
-                            itemClicks.onNext(item)
-                        }
-                    }
+            val item = stories?.get(position) ?: return
+
+            holder?.title?.text = item.title
+            holder?.itemView?.setOnClickListener {
+                Log.d(TAG, "url: ${item.url}")
+                itemClicks.onNext(item)
+            }
         }
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): TopStoriesViewHolder {
